@@ -1,0 +1,62 @@
+﻿@page "/SlideController"
+<h3>SlideController</h3>
+<b>@Slides.SharedSlide</b>
+<p>@(ViewingSlide.Script)</p>
+<div style="position: absolute; width: 40vw; height: 60%;bottom: 10vh; left:20px; background: #808080; text-align:center; align-content: center;" @onclick="@Last">Previous</div>
+<div style="        position: absolute;
+        width: 40vw;
+        height: 60%;
+        bottom: 10vh;
+        right: 20px;
+        background: #808080;
+        text-align: center;
+        align-content: center;
+" @onclick="@Next">Next</div>
+@code {
+    private BlazorPresentation.SlideData currentSlide = new BlazorPresentation.SlideData
+    {
+        Title = "loading...",
+        Body = (Microsoft.AspNetCore.Components.MarkupString)"please wait",
+        Images = new List<string>()
+    };
+
+    public void Next()
+    {
+        Slides.SharedSlide++;
+    }
+
+    public void Last()
+    {
+        Slides.SharedSlide--;
+    }
+
+    public BlazorPresentation.SlideData ViewingSlide
+    {
+        get => currentSlide;
+        set => currentSlide = value;
+    }
+
+    void Slides_SlideChanged(object sender, EventArgs e)
+    {
+        if (BlazorPresentation.Slides.SharedSlide <= BlazorPresentation.Slides.SharedSlides.Count)
+        {
+            ViewingSlide = BlazorPresentation.Slides.SharedSlides[BlazorPresentation.Slides.SharedSlide - 1];
+        }
+        else
+        {
+            ViewingSlide = new SlideData
+            {
+                Title = "Thankyou!",
+                Body = (MarkupString)"",
+                Images = new List<string>(),
+                Script = (MarkupString)"Thanks"
+            };
+        }
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        BlazorPresentation.Slides.SlideChanged += Slides_SlideChanged;
+    }
+}
