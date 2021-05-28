@@ -1,0 +1,152 @@
+﻿@page "/UploadSlides"
+@inject IJSRuntime JS;
+@using System;
+@using System.ComponentModel.DataAnnotations;
+@using System.IO;
+@using System.Text;
+@using Newtonsoft.Json
+
+<style>
+    body {
+        background: #808080;
+    }
+
+    .form-group label {
+        width: 400px;
+        margin-right: 10px;
+        text-align: right;
+    }
+</style>
+
+<h1>Create your presentation</h1>
+<h2>@Message</h2>
+<EditForm Model="@UploadPresentation" OnSubmit="@FormSubmitted">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <ValidationMessage For="() => UploadPresentation.FourCharacterCode" />
+        <label for="fourLetterCode">Four Letter Code</label>
+        <InputText @bind-Value=UploadPresentation.FourCharacterCode id="fourLetterCode" />
+    </div>
+
+    <div class="form-group">
+        <ValidationMessage For="() => UploadPresentation.PresenterPassword" />
+        <label for="PresenterPassword">Presenter Password</label>
+        <InputText @bind-Value=UploadPresentation.PresenterPassword id="PresenterPassword" />
+    </div>
+
+    <div class="form-group">
+        <ValidationMessage For="() => UploadPresentation.Title" />
+        <label for="Title">Title</label>
+        <InputText @bind-Value=UploadPresentation.Title id="Title" />
+    </div>
+
+    <div class="form-group">
+        <ValidationMessage For="() => UploadPresentation.AnchorImage" />
+        <label for="AnchorImage">Anchor Image URL</label>
+        <InputText @bind-Value=UploadPresentation.AnchorImage id="AnchorImage" />
+    </div>
+
+    <div class="form-group">
+        <ValidationMessage For="() => UploadPresentation.SlidesJson" />
+        <label for="SlidesJson">SlidesJson</label>
+        <InputFile OnChange="@LoadFiles" />
+    </div>
+
+    @if (SubmitEnabled)
+    {
+    <input type="submit" value="Submit" class="btn btn-primary"/>
+    }
+
+    @if (ShowControlLink)
+    {
+<a href="/SlideController/@UploadPresentation.FourCharacterCode">/SlideController/@UploadPresentation.FourCharacterCode</a>
+    }
+</EditForm>
+
+
+@code
+{
+    public string Message { get; set; }
+    public bool ShowControlLink { get; set; }
+    private UploadPresentationModel UploadPresentation = new UploadPresentationModel();
+    class UploadPresentationModel
+    {
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Required")]
+        [MinLength(4, ErrorMessage = "Code is too short.")]
+        [MaxLength(4, ErrorMessage = "Code is too long.")]
+        public string FourCharacterCode { get; set; }
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Required")]
+        [MinLength(4, ErrorMessage = "Password is too short.")]
+        public string PresenterPassword { get; set; }
+        public string AnchorImage { get; set; }
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Required")]
+        [MinLength(3, ErrorMessage = "Title is too short.")]
+        public string Title { get; set; }
+        public string SlidesJson { get; set; }
+    }
+
+    private async void LoadFiles(InputFileChangeEventArgs e)
+    {
+        Message = "Uploading...";
+
+        SubmitEnabled = false;
+        Microsoft.AspNetCore.Components.Forms.IBrowserFile file = e.File;
+        var stream = file.OpenReadStream();
+
+        string json = "";
+        using (StreamReader reader = new StreamReader(stream))
+        {
+            StringBuilder result = new StringBuilder();
+            string addString = "-";
+            int ct = 0;
+            while (addString != null && addString.Length>0)
+            {
+                try
+                {
+                    ct++;
+                    addString = await reader.ReadLineAsync();
+
+                    result.AppendLine(addString);
+                    Message = "Uploading (Lines read: " + ct + ")";
+                    StateHasChanged();
+                }
+                catch { }
+            }
+
+            json = result.ToString();
+        }
+
+        UploadPresentation.SlidesJson = json;
+        SubmitEnabled = true;
+        Message = "";
+        StateHasChanged();
+    }
+
+    public bool SubmitEnabled = false;
+    void FormSubmitted()
+    {
+        if (SubmitEnabled)
+        {
+            Presentation presentation = new Presentation
+            {
+                FourCharCode = UploadPresentation.FourCharacterCode,
+                PresenterPassCode = UploadPresentation.PresenterPassword,
+                Watermark = UploadPresentation.AnchorImage,
+                Slides = JsonConvert.DeserializeObject<List<SlideData>>(UploadPresentation.SlidesJson),
+                Title = UploadPresentation.Title
+            };
+
+            if (!Slides.Presentations.ContainsKey(presentation.FourCharCode))
+            {
+                Slides.Presentations.Add(presentation.FourCharCode, presentation);
+                Message = "Presentation added";
+                ShowControlLink = true;
+            }
+            else
+            {
+                Message = "Four character code already used";
+            }
+            StateHasChanged();
+        }
+    }
+}

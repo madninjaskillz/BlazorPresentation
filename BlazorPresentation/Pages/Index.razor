@@ -1,1 +1,29 @@
-﻿
+﻿@page "/"
+    <style>
+    body {
+        background: #808080;
+    }
+    </style>
+<h1>Blazor Prezentr</h1>
+<a href="/UploadSlides">Create Presentation</a>
+<table width="100%" border="1">
+    <tr>
+        <td>Code</td>
+        <td>Title</td>
+    </tr>
+    @foreach (var t in Slides.Presentations)
+    {
+            <tr>
+                <td>@t.Key</td>
+                <td><a href="/view/@t.Key">@t.Value.Title</a></td>
+            </tr>
+
+    }
+
+</table>
+
+
+
+@code{
+
+}

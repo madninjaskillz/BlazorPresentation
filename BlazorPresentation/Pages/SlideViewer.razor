@@ -1,0 +1,89 @@
+﻿@page "/view/{FourCharCode}"
+@inject IJSRuntime JS;
+<div style="width: 99%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 20px;
+">
+    
+    <h1>@CurrentSlide.Title</h1>
+    <div style="position: absolute; width: 80vw; height: 80vh; top: 15vh; bottom: 5vh; left: 10vw; right: 10vw; align-content: center; text-align: center;">
+
+        @if (CurrentSlide.Images != null)
+        {
+            @foreach (var img in CurrentSlide.Images)
+            {
+<img style="margin: 10px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);height: 60vh" src="@img" />
+            }
+        }
+        <p style="        color: white;
+        margin: 10px;">@CurrentSlide.Body</p>
+    </div>
+    <div style="position:absolute;right:0px;bottom:0px;"><img src="../../images/anchor.png" style="width: 30vw;"/></div>
+</div>
+<div style="height: 100vh; width: 100vw;margin:auto;">
+    <h1 style="font-size: 72px;vertical-align:central;position:absolute;text-align:center;margin:20vw">@CurrentSlide.MassiveTitle</h1>
+</div>
+
+
+@code{ private int slide = 0;
+
+    public SlideData CurrentSlide = new SlideData
+    {
+        Title = "Waiting for presenter...",
+        Body = (MarkupString)"hold your horses",
+        Images = new List<string>()
+    };
+
+    private string fourCharCode;
+    [ParameterAttribute]
+    public string FourCharCode
+    {
+        get => fourCharCode;
+        set
+        {
+            fourCharCode = value;
+
+            if (Slides.Presentations.ContainsKey(fourCharCode))
+            {
+                SelectedPresentation = Slides.Presentations[fourCharCode];
+
+                CurrentSlide = SelectedPresentation.Slides[Math.Max(SelectedPresentation.SharedSlide-1,0)];
+                SelectedPresentation.SlideChanged += Slides_SlideChanged;
+            }
+        }
+    }
+
+    public Presentation SelectedPresentation = null;
+
+
+    void Slides_SlideChanged(object sender, EventArgs e)
+    {
+        if (SelectedPresentation.SharedSlide <= SelectedPresentation.Slides.Count)
+        {
+            CurrentSlide = SelectedPresentation.Slides[Math.Max(SelectedPresentation.SharedSlide - 1,0)];
+        }
+        else
+        {
+            CurrentSlide = new SlideData
+            {
+                Title = "Thankyou!",
+                Body = (MarkupString)"",
+                Images = new List<string>()
+            };
+
+        }
+
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+
+        //JS.InvokeVoidAsync("startVideo");
+    }
+}

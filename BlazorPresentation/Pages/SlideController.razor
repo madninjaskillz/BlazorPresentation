@@ -1,11 +1,12 @@
-﻿@page "/SlideController"
-<h3>SlideController</h3>
-<b>@Slides.SharedSlide</b>
+﻿@page "/SlideController/{FourCharCode}"
+<h3>@ViewingSlide.MassiveTitle</h3>
+<h3>@ViewingSlide.Title</h3>
+<b>@SelectedPresentation.SharedSlide</b>
 <p>@(ViewingSlide.Script)</p>
-<div style="position: absolute; width: 40vw; height: 60%;bottom: 10vh; left:20px; background: #808080; text-align:center; align-content: center;" @onclick="@Last">Previous</div>
+<div style="position: absolute; width: 40vw; height: 40px;bottom: 10vh; left:20px; background: #808080; text-align:center; align-content: center;" @onclick="@Last">Previous</div>
 <div style="        position: absolute;
         width: 40vw;
-        height: 60%;
+        height: 40px;
         bottom: 10vh;
         right: 20px;
         background: #808080;
@@ -13,6 +14,28 @@
         align-content: center;
 " @onclick="@Next">Next</div>
 @code {
+
+    private string fourCharCode;
+    [ParameterAttribute]
+    public string FourCharCode
+    {
+        get => fourCharCode;
+        set
+        {
+            fourCharCode = value;
+
+            if (Slides.Presentations.ContainsKey(fourCharCode))
+            {
+                SelectedPresentation = Slides.Presentations[fourCharCode];
+
+                ViewingSlide = SelectedPresentation.Slides[Math.Max(SelectedPresentation.SharedSlide - 1,0)];
+                SelectedPresentation.SlideChanged += Slides_SlideChanged;
+            }
+        }
+    }
+
+    public Presentation SelectedPresentation = null;
+
     private BlazorPresentation.SlideData currentSlide = new BlazorPresentation.SlideData
     {
         Title = "loading...",
@@ -22,12 +45,12 @@
 
     public void Next()
     {
-        Slides.SharedSlide++;
+        SelectedPresentation.SharedSlide++;
     }
 
     public void Last()
     {
-        Slides.SharedSlide--;
+        SelectedPresentation.SharedSlide--;
     }
 
     public BlazorPresentation.SlideData ViewingSlide
@@ -38,9 +61,9 @@
 
     void Slides_SlideChanged(object sender, EventArgs e)
     {
-        if (BlazorPresentation.Slides.SharedSlide <= BlazorPresentation.Slides.SharedSlides.Count)
+        if (SelectedPresentation.SharedSlide <= SelectedPresentation.Slides.Count)
         {
-            ViewingSlide = BlazorPresentation.Slides.SharedSlides[BlazorPresentation.Slides.SharedSlide - 1];
+            ViewingSlide = SelectedPresentation.Slides[Math.Max(SelectedPresentation.SharedSlide - 1,0)];
         }
         else
         {
@@ -57,6 +80,6 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        BlazorPresentation.Slides.SlideChanged += Slides_SlideChanged;
+        //BlazorPresentation.Slides.SlideChanged += Slides_SlideChanged;
     }
 }
